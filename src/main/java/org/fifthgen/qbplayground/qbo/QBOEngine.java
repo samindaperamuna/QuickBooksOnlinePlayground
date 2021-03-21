@@ -1,12 +1,23 @@
 package org.fifthgen.qbplayground.qbo;
 
+import com.intuit.ipp.core.Context;
+import com.intuit.ipp.core.IEntity;
+import com.intuit.ipp.core.ServiceType;
+import com.intuit.ipp.data.Customer;
+import com.intuit.ipp.exception.FMSException;
+import com.intuit.ipp.query.GenerateQuery;
+import com.intuit.ipp.security.OAuth2Authorizer;
+import com.intuit.ipp.services.DataService;
+import com.intuit.ipp.services.QueryResult;
 import com.intuit.oauth2.client.OAuth2PlatformClient;
 import com.intuit.oauth2.config.Environment;
 import com.intuit.oauth2.config.OAuth2Config;
 import com.intuit.oauth2.config.Scope;
 import com.intuit.oauth2.data.BearerTokenResponse;
+import com.intuit.oauth2.data.UserInfoResponse;
 import com.intuit.oauth2.exception.InvalidRequestException;
 import com.intuit.oauth2.exception.OAuthException;
+import com.intuit.oauth2.exception.OpenIdException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.fifthgen.qbplayground.event.bean.AuthorizationBean;
@@ -14,11 +25,11 @@ import org.fifthgen.qbplayground.utility.Helper;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static com.intuit.ipp.query.GenerateQuery.$;
+import static com.intuit.ipp.query.GenerateQuery.select;
 
 public class QBOEngine {
 
@@ -187,31 +198,54 @@ public class QBOEngine {
         return diffInSecs >= this.refreshTokenExpiresIn;
     }
 
-//    public void addCustomer(Customer customer) {
-//        authenticateClient(() -> {
-//            OAuth2Authorizer oauth = new OAuth2Authorizer(this.accessToken);
-//
-//            try {
-//                Context context = new Context(oauth, ServiceType.QBO, companyId);
-//                DataService service = new DataService(context);
-//            } catch (FMSException e) {
-//                log.error("Couldn't create QBO context : " + e.getLocalizedMessage());
-//            }
-//        });
-//    }
+    public UserInfoResponse getUserInfo() {
+        UserInfoResponse userInfoResponse = null;
 
+        OAuth2PlatformClient oAuth2Client = new OAuth2PlatformClient(oAuth2Config);
 
-//    public void getUserInfo(Callback) {
-//        UserInfoResponse userInfoResponse;
-//
-//        authenticateClient(() -> {
-//            OAuth2PlatformClient oAuth2Client = new OAuth2PlatformClient(oAuth2Config);
-//
-//            try {
-//               userInfoResponse = oAuth2Client.getUserInfo(accessToken);
-//            } catch (OpenIdException e) {
-//                log.error(e.getLocalizedMessage());
-//            }
-//        });
-//    }
+        try {
+            userInfoResponse = oAuth2Client.getUserInfo(this.accessToken);
+        } catch (OpenIdException e) {
+            log.error("Couldn't fetch openID user information : " + e.getLocalizedMessage());
+        }
+
+        return userInfoResponse;
+    }
+
+    public List<Customer> getCustomers() {
+        List<Customer> customers = null;
+        OAuth2Authorizer oauth = new OAuth2Authorizer(this.accessToken);
+
+        try {
+            Context context = new Context(oauth, ServiceType.QBO, companyId);
+            DataService service = new DataService(context);
+
+            Customer customer = GenerateQuery.createQueryEntity(Customer.class);
+
+            String query = select($(customer)).generate();
+
+            QueryResult result = service.executeQuery(query);
+
+            customers = new ArrayList<>();
+            for (IEntity entity : result.getEntities()) {
+                customers.add((Customer) entity);
+            }
+        } catch (FMSException e) {
+            log.error("Couldn't create QBO context : " + e.getLocalizedMessage());
+        }
+
+        return customers;
+    }
+
+    public void addCustomer(Customer customer) {
+        OAuth2Authorizer oauth = new OAuth2Authorizer(this.accessToken);
+
+        try {
+            Context context = new Context(oauth, ServiceType.QBO, companyId);
+            DataService service = new DataService(context);
+        } catch (FMSException e) {
+            log.error("Couldn't create QBO context : " + e.getLocalizedMessage());
+        }
+    }
+
 }

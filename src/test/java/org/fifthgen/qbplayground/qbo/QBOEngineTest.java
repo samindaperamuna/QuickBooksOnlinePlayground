@@ -48,29 +48,41 @@ class QBOEngineTest {
 
     @Test
     void fetchTokensTest() {
-        String url = engine.requestAuthorizationUrl(scopes);
+        if (!engine.authenticateClient()) {
+            String url = engine.requestAuthorizationUrl(scopes);
 
-        try {
-            Desktop.getDesktop().browse(new URI(url));
-        } catch (IOException | URISyntaxException e) {
-            log.error("Failed to navigate to URL : " + e.getLocalizedMessage());
-        }
+            try {
+                Desktop.getDesktop().browse(new URI(url));
+            } catch (IOException | URISyntaxException e) {
+                log.error("Failed to navigate to URL : " + e.getLocalizedMessage());
+            }
 
-        Context.getInstance().startServer(new AuthRedirectHandler(authBean -> {
-            Assertions.assertNotNull(authBean);
+            Context.getInstance().startServer(new AuthRedirectHandler(authBean -> {
+                Assertions.assertNotNull(authBean);
 
-            engine.fetchTokens(authBean);
-        }));
+                engine.fetchTokens(authBean);
+            }));
 
-        try {
-            Thread.sleep(30000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     @Test
     void authenticateClientTest() {
         Assertions.assertTrue(engine.authenticateClient());
+    }
+
+    @Test
+    void getUserInfoTest() {
+        Assertions.assertNotNull(engine.getUserInfo());
+    }
+
+    @Test
+    void getCustomersTest() {
+        Assertions.assertNotNull(engine.getCustomers());
     }
 }

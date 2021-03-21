@@ -32,11 +32,11 @@
     <message>
         <request>
             <compression>gzip</compression>
-            <serialization>json</serialization>
+            <serialization>xml</serialization>
         </request>
         <response>
             <compression>gzip</compression>
-            <serialization>json</serialization>
+            <serialization>xml</serialization>
         </response>
     </message>
 
