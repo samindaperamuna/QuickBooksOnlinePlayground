@@ -31,8 +31,8 @@ class QBOEngineTest {
         engine = Context.getInstance().engine;
 
         scopes = new ArrayList<>();
+        scopes.add(Scope.Accounting);
         scopes.add(Scope.OpenIdAll);
-        scopes.add(Scope.Payments);
     }
 
     @AfterEach

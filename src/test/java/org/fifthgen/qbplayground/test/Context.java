@@ -14,6 +14,7 @@ public class Context {
     private static final String CLIENT_ID = "OAuth2AppClientId";
     private static final String CLIENT_SECRET = "OAuth2AppClientSecret";
     private static final String REDIRECT_URL = "OAuth2AppRedirectUri";
+    private static final String ACCOUNTING_API_HOST = "IntuitAccountingAPIHost";
 
     private static Context CONTEXT;
 
@@ -26,8 +27,14 @@ public class Context {
         String clientId = properties.getProperty(CLIENT_ID);
         String clientSecret = properties.getProperty(CLIENT_SECRET);
         String redirectURL = properties.getProperty(REDIRECT_URL);
+        String accountingAPIHost = properties.getProperty(ACCOUNTING_API_HOST);
 
-        this.engine = new QBOEngine(companyId, clientId, clientSecret, redirectURL, Environment.SANDBOX);
+        this.engine = new QBOEngine(companyId,
+                clientId,
+                clientSecret,
+                redirectURL,
+                accountingAPIHost,
+                Environment.SANDBOX);
     }
 
     public static Context getInstance() {

@@ -9,6 +9,7 @@ import com.intuit.ipp.query.GenerateQuery;
 import com.intuit.ipp.security.OAuth2Authorizer;
 import com.intuit.ipp.services.DataService;
 import com.intuit.ipp.services.QueryResult;
+import com.intuit.ipp.util.Config;
 import com.intuit.oauth2.client.OAuth2PlatformClient;
 import com.intuit.oauth2.config.Environment;
 import com.intuit.oauth2.config.OAuth2Config;
@@ -40,18 +41,24 @@ public class QBOEngine {
     private static final String REFRESH_TOKEN_EXPIRES_IN = "refresh_token_expires_in";
     private static final String LAST_TOKEN_REQUEST_AT = "last_token_request_at";
 
+    private static final String API_END_POINT = "/v3/company";
+    private static final String API_MINOR_VERSION = "57";
+    private static final String TX_FORMAT_JSON = "json";
+    private static final String TX_FORMAT_XML = "xml";
+    private static final String COMPRESSION_FORMAT_GZIP = "gzip";
+
     private static final SimpleDateFormat STANDARD_DATE_TIME = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss", Locale.US);
 
     private final Logger log;
     private final Environment environment;
 
-    private String clientId;
-    private String clientSecret;
-    private String authorizationRedirect;
+    private final String clientId;
+    private final String clientSecret;
+    private final String authorizationRedirect;
 
-    private OAuth2Config oAuth2Config;
+    private final OAuth2Config oAuth2Config;
 
-    private String companyId;
+    private final String companyId;
     private String accessToken;
     private String openIdToken;
     private String refreshToken;
@@ -59,18 +66,27 @@ public class QBOEngine {
     private long accessTokenExpiresIn;
     private long refreshTokenExpiresIn;
 
-    public QBOEngine(Environment environment) {
+    public QBOEngine(String companyId,
+                     String clientId,
+                     String clientSecret,
+                     String authorizationRedirect,
+                     String accountingAPIHost,
+                     Environment environment) {
+
         this.log = LogManager.getLogger(getClass());
         this.environment = environment;
-    }
-
-    public QBOEngine(String companyId, String clientId, String clientSecret, String authorizationRedirect, Environment environment) {
-        this(environment);
 
         this.companyId = companyId;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.authorizationRedirect = authorizationRedirect;
+
+        // Set API configuration settings
+        Config.setProperty(Config.BASE_URL_QBO, accountingAPIHost + API_END_POINT);
+        Config.setProperty(Config.SERIALIZATION_REQUEST_FORMAT, TX_FORMAT_JSON);
+        Config.setProperty(Config.SERIALIZATION_RESPONSE_FORMAT, TX_FORMAT_JSON);
+        Config.setProperty(Config.COMPRESSION_REQUEST_FORMAT, COMPRESSION_FORMAT_GZIP);
+        Config.setProperty(Config.COMPRESSION_RESPONSE_FORMAT, COMPRESSION_FORMAT_GZIP);
 
         this.oAuth2Config = new OAuth2Config.OAuth2ConfigBuilder(clientId, clientSecret)
                 .callDiscoveryAPI(environment)
@@ -147,7 +163,7 @@ public class QBOEngine {
         this.accessTokenExpiresIn = tokenResponse.getExpiresIn();
         this.refreshTokenExpiresIn = tokenResponse.getXRefreshTokenExpiresIn();
 
-        Properties properties = new Properties();
+        Properties properties = Helper.readProperties();
         properties.setProperty(ACCESS_TOKEN, this.accessToken);
         properties.setProperty(REFRESH_TOKEN, this.refreshToken);
         properties.setProperty(OPEN_ID_TOKEN, this.openIdToken);
@@ -214,10 +230,13 @@ public class QBOEngine {
 
     public List<Customer> getCustomers() {
         List<Customer> customers = null;
+
         OAuth2Authorizer oauth = new OAuth2Authorizer(this.accessToken);
 
         try {
             Context context = new Context(oauth, ServiceType.QBO, companyId);
+            context.setMinorVersion(API_MINOR_VERSION);
+
             DataService service = new DataService(context);
 
             Customer customer = GenerateQuery.createQueryEntity(Customer.class);
@@ -247,5 +266,4 @@ public class QBOEngine {
             log.error("Couldn't create QBO context : " + e.getLocalizedMessage());
         }
     }
-
 }
