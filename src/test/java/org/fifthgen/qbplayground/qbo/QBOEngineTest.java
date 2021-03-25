@@ -10,7 +10,10 @@ import org.fifthgen.qbplayground.event.AuthorizationEvent;
 import org.fifthgen.qbplayground.event.FetchTokensEvent;
 import org.fifthgen.qbplayground.server.SimpleHttpServer;
 import org.fifthgen.qbplayground.test.Context;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.awt.*;
 import java.io.IOException;
@@ -25,13 +28,14 @@ import java.util.concurrent.TimeoutException;
 
 class QBOEngineTest {
 
-    private QBOEngine engine;
-    private List<Scope> scopes;
+    private static QBOEngine engine;
+    private static List<Scope> scopes;
     private static final int DELAY = 30;
     private static Logger log;
 
     private static SimpleHttpServer server;
     private static Queue<AuthorizationEvent> authQueue;
+
     private Waiter waiter;
 
     @BeforeAll
@@ -40,26 +44,17 @@ class QBOEngineTest {
 
         authQueue = new PriorityQueue<>();
         server = Context.getInstance().startServer(new AuthRedirectHandler(authQueue));
+
+        engine = Context.getInstance().engine;
+
+        scopes = new ArrayList<>();
+        scopes.add(Scope.Accounting);
+        scopes.add(Scope.OpenIdAll);
     }
 
     @AfterAll
     static void afterAll() {
         server.stopServer();
-    }
-
-    @BeforeEach
-    void setUp() {
-        engine = Context.getInstance().engine;
-
-        scopes = new ArrayList<>();
-        scopes.add(Scope.Accounting);
-        scopes.add(Scope.Payments);
-        scopes.add(Scope.OpenIdAll);
-    }
-
-    @AfterEach
-    void tearDown() {
-        engine = null;
     }
 
     @Test
@@ -104,6 +99,9 @@ class QBOEngineTest {
         waiter = new Waiter();
 
         authenticationHelper(() -> {
+            // Need to reconfigure context since its a new thread.
+            engine.configureContext();
+
             waiter.assertNotNull(engine.getCustomers());
             waiter.resume();
         });
@@ -116,6 +114,9 @@ class QBOEngineTest {
         waiter = new Waiter();
 
         authenticationHelper(() -> {
+            // Need to reconfigure context since its a new thread.
+            engine.configureContext();
+
             Customer c = new Customer();
             c.setDisplayName("Samantha");
 
@@ -152,6 +153,8 @@ class QBOEngineTest {
     private void authorizeClientHelper(AuthorizationEvent event) {
         if (!engine.authenticateClient()) {
             authorizeClient(event);
+        } else {
+            waiter.resume();
         }
     }
 

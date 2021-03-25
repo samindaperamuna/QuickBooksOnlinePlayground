@@ -53,6 +53,7 @@ public class QBOEngine {
     private final String clientId;
     private final String clientSecret;
     private final String authorizationRedirect;
+    private final String accountingAPIHost;
 
     private final OAuth2Config oAuth2Config;
 
@@ -78,17 +79,27 @@ public class QBOEngine {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.authorizationRedirect = authorizationRedirect;
+        this.accountingAPIHost = accountingAPIHost;
 
-        // Set API configuration settings
+        this.oAuth2Config = new OAuth2Config.OAuth2ConfigBuilder(clientId, clientSecret)
+                .callDiscoveryAPI(environment)
+                .buildConfig();
+
+        // Valid only for the current thread.
+        this.configureContext();
+    }
+
+    /**
+     * Set configuration properties for the API service. This method should be run once per each thread or else default
+     * settings will be applied.
+     * See <a href="https://developer.intuit.com/app/developer/qbo/docs/develop/sdks-and-samples-collections/java/configuration">developer.intuit.com</a>}
+     */
+    public void configureContext() {
         Config.setProperty(Config.BASE_URL_QBO, accountingAPIHost);
         Config.setProperty(Config.SERIALIZATION_REQUEST_FORMAT, TX_FORMAT_JSON);
         Config.setProperty(Config.SERIALIZATION_RESPONSE_FORMAT, TX_FORMAT_JSON);
         Config.setProperty(Config.COMPRESSION_REQUEST_FORMAT, COMPRESSION_FORMAT_GZIP);
         Config.setProperty(Config.COMPRESSION_RESPONSE_FORMAT, COMPRESSION_FORMAT_GZIP);
-
-        this.oAuth2Config = new OAuth2Config.OAuth2ConfigBuilder(clientId, clientSecret)
-                .callDiscoveryAPI(environment)
-                .buildConfig();
     }
 
     public boolean authenticateClient() {
@@ -233,6 +244,7 @@ public class QBOEngine {
 
         try {
             Context context = new Context(oauth, ServiceType.QBO, companyId);
+
             DataService service = new DataService(context);
 
             Customer customer = GenerateQuery.createQueryEntity(Customer.class);
