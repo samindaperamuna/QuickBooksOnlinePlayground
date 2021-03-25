@@ -1,6 +1,6 @@
 package org.fifthgen.qbplayground.event;
 
-public interface FetchTokensEventHandler {
+public interface FetchTokensEvent {
 
     void onFetchTokenCompleted();
 }

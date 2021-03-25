@@ -67,6 +67,8 @@ public class Helper {
 
                 if (stateDecoupled.length > 1) {
                     statesMap.put(stateDecoupled[0], stateDecoupled[1]);
+                } else if (stateDecoupled.length > 0) {
+                    statesMap.put("security_token", stateDecoupled[0]);
                 }
             }
 

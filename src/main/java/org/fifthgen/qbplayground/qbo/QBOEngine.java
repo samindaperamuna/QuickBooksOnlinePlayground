@@ -41,8 +41,6 @@ public class QBOEngine {
     private static final String REFRESH_TOKEN_EXPIRES_IN = "refresh_token_expires_in";
     private static final String LAST_TOKEN_REQUEST_AT = "last_token_request_at";
 
-    private static final String API_END_POINT = "/v3/company";
-    private static final String API_MINOR_VERSION = "57";
     private static final String TX_FORMAT_JSON = "json";
     private static final String TX_FORMAT_XML = "xml";
     private static final String COMPRESSION_FORMAT_GZIP = "gzip";
@@ -82,7 +80,7 @@ public class QBOEngine {
         this.authorizationRedirect = authorizationRedirect;
 
         // Set API configuration settings
-        Config.setProperty(Config.BASE_URL_QBO, accountingAPIHost + API_END_POINT);
+        Config.setProperty(Config.BASE_URL_QBO, accountingAPIHost);
         Config.setProperty(Config.SERIALIZATION_REQUEST_FORMAT, TX_FORMAT_JSON);
         Config.setProperty(Config.SERIALIZATION_RESPONSE_FORMAT, TX_FORMAT_JSON);
         Config.setProperty(Config.COMPRESSION_REQUEST_FORMAT, COMPRESSION_FORMAT_GZIP);
@@ -235,8 +233,6 @@ public class QBOEngine {
 
         try {
             Context context = new Context(oauth, ServiceType.QBO, companyId);
-            context.setMinorVersion(API_MINOR_VERSION);
-
             DataService service = new DataService(context);
 
             Customer customer = GenerateQuery.createQueryEntity(Customer.class);
@@ -250,20 +246,25 @@ public class QBOEngine {
                 customers.add((Customer) entity);
             }
         } catch (FMSException e) {
-            log.error("Couldn't create QBO context : " + e.getLocalizedMessage());
+            log.error("Couldn't query customers : " + e.getLocalizedMessage());
         }
 
         return customers;
     }
 
-    public void addCustomer(Customer customer) {
+    public Customer addCustomer(Customer customer) {
         OAuth2Authorizer oauth = new OAuth2Authorizer(this.accessToken);
+        Customer resultCustomer = null;
 
         try {
             Context context = new Context(oauth, ServiceType.QBO, companyId);
             DataService service = new DataService(context);
+
+            resultCustomer = service.add(customer);
         } catch (FMSException e) {
             log.error("Couldn't create QBO context : " + e.getLocalizedMessage());
         }
+
+        return resultCustomer;
     }
 }

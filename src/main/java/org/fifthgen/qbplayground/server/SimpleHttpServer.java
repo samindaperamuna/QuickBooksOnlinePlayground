@@ -73,6 +73,13 @@ public class SimpleHttpServer {
         }
     }
 
+    /**
+     * Terminate the server instance.
+     */
+    public void stopServer() {
+        this.server.stop(1);
+    }
+
     public HttpContext createContext(String context, SimpleHttpHandler contextHandler) {
         return this.server.createContext(context, contextHandler);
     }

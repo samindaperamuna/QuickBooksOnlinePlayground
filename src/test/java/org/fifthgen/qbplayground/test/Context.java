@@ -45,9 +45,11 @@ public class Context {
         return CONTEXT;
     }
 
-    public void startServer(AuthRedirectHandler redirectHandler) {
+    public SimpleHttpServer startServer(AuthRedirectHandler redirectHandler) {
         SimpleHttpServer server = SimpleHttpServer.getInstance();
         server.createContext("/oauth2redirect", redirectHandler);
         server.startServer();
+
+        return server;
     }
 }
